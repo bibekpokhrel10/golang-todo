@@ -13,7 +13,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var db, _ = gorm.Open("mysql", "root:root@/todolist?charset=utf8&parseTime=True&loc=Local")
+//var db, _ = gorm.Open("mysql", "root:root@/todolist?charset=utf8&parseTime=True&loc=Local")
+var db, _ = gorm.Open("sqlite3", "gorm.db")
+
+//var db, _ := gorm.Open(sqlite.Open("gorm.db"), &gorm.Config{})
 
 type TodoItemModel struct {
 	Id          int `grom:"primary_key"`
