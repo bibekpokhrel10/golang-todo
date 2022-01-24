@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -9,6 +10,9 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
+
+	//"github.com/rs/cors"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -38,68 +42,88 @@ func CreateItem(w http.ResponseWriter, r *http.Request) {
 func UpdateItem(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, _ := strconv.Atoi(vars["id"])
-	err := GetItemByID(id)
-	if err == false {
+	todo, err := GetItemByID(id)
+	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
-		io.WriteString(w, `{"updated":false,"error":"Record Not Found"}`)
-	} else {
-		completed, _ := strconv.ParseBool(r.FormValue("Completed"))
-		log.WithFields(log.Fields{"Id": id, "Completed": completed}).Info("Updating TodoItem")
-		todo := &TodoItemModel{}
-		db.First(&todo, id)
-		todo.Completed = completed
-		db.Save(&todo)
-		w.Header().Set("Content-Type", "application/json")
-		io.WriteString(w, `{"updated":true}`)
+		io.WriteString(w, err.Error())
+		return
+
 	}
+	completed, _ := strconv.ParseBool(r.FormValue("completed"))
+	log.WithFields(log.Fields{"Id": id, "completed": completed}).Info("Updating TodoItem")
+	db.First(&todo, id)
+	todo.Completed = completed
+	db.Save(&todo)
+	w.Header().Set("Content-Type", "application/json")
+	io.WriteString(w, `{"updated":true}`)
 
 }
 
 func DeleteItem(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, _ := strconv.Atoi(vars["id"])
-	err := GetItemByID(id)
-	if err == false {
+	log.Info("item id: ", id)
+	err := DeleteItemByID(id)
+
+	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
-		io.WriteString(w, `{"deleted": false, "error":"Record Not Found"}`)
-	} else {
-		log.WithFields(log.Fields{"Id": id}).Info("Deleting TodoItem")
-		todo := &TodoItemModel{}
-		db.First(&todo, id)
-		db.Delete(&todo)
-		w.Header().Set("Content-Type", "application/json")
-		io.WriteString(w, `{"deleted":true}`)
+		io.WriteString(w, err.Error())
+		return
 	}
+	w.Header().Set("Content-Type", "application/json")
+	io.WriteString(w, `{"deleted":true}`)
+}
+func DeleteItemByID(Id int) error {
+	todo := TodoItemModel{}
+	err := db.Model(&todo).Where("id=?", Id).Delete(&todo).Error
+	if err != nil {
+		log.Warn("TodoItem not found in database")
+		return err
+	}
+	return nil
 }
 
-func GetItemByID(Id int) bool {
-	todo := &TodoItemModel{}
-	result := db.First(&todo, Id)
-	if result.Error != nil {
+func GetItemByID(Id int) (TodoItemModel, error) {
+	todo := TodoItemModel{}
+	err := db.First(&todo, Id).Take(&todo).Error
+	if err != nil {
 		log.Warn("TodoItem not found in database")
-		return false
+		return todo, err
 	}
-	return true
+	return todo, nil
 }
 
 func GetCompletedItems(w http.ResponseWriter, r *http.Request) {
 	log.Info("Get completed TodoItems")
-	completedTodoItems := GetTodoItems(true)
+	completedTodoItems, err := GetTodoItems(true)
 	w.Header().Set("Content-Type", "application/json")
+	if err != nil {
+		json.NewEncoder(w).Encode(err)
+		return
+	}
+
 	json.NewEncoder(w).Encode(completedTodoItems)
 }
 
 func GetIncompleteItems(w http.ResponseWriter, r *http.Request) {
 	log.Info("Get incomplete TodoItems")
-	IncompleteTodoItems := GetTodoItems(false)
+	IncompleteTodoItems, err := GetTodoItems(false)
 	w.Header().Set("Content-Type", "applicaton/json")
+	if err != nil {
+		json.NewEncoder(w).Encode(err)
+		return
+	}
+
 	json.NewEncoder(w).Encode(IncompleteTodoItems)
 }
 
-func GetTodoItems(completed bool) interface{} {
+func GetTodoItems(completed bool) ([]TodoItemModel, error) {
 	var todos []TodoItemModel
-	TodoItems := db.Where("Completed = ?", completed).Find(&todos).Value
-	return TodoItems
+	err := db.Where("Completed = ?", completed).Find(&todos).Error
+	if err != nil {
+		return todos, err
+	}
+	return todos, nil
 }
 
 func Healthz(w http.ResponseWriter, r *http.Request) {
@@ -111,6 +135,26 @@ func init() {
 	log.SetFormatter(&log.TextFormatter{})
 	log.SetReportCaller(true)
 }
+
+func CORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "*")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+
+			return
+		}
+
+		fmt.Println("ok")
+
+		next.ServeHTTP(w, r)
+		return
+	})
+}
+
 func main() {
 	defer db.Close()
 
@@ -119,12 +163,14 @@ func main() {
 
 	log.Info("Starting Todolist API Server")
 	router := mux.NewRouter()
+	router.Use(CORS)
 	router.HandleFunc("/healthz", Healthz).Methods("GET")
 	router.HandleFunc("/todo-completed", GetCompletedItems).Methods("GET")
 	router.HandleFunc("/todo-incomplete", GetIncompleteItems).Methods("GET")
 	router.HandleFunc("/todo", CreateItem).Methods("POST")
-	router.HandleFunc("/todo/{id}", UpdateItem).Methods("PUT")
-	router.HandleFunc("/todo/{id}", DeleteItem).Methods("DELETE")
+	router.HandleFunc("/todo/{id}", UpdateItem).Methods("PUT", "OPTIONS")
+	router.HandleFunc("/todo/{id}", DeleteItem).Methods("DELETE", "OPTIONS")
+
 	http.ListenAndServe(":8000", router)
 
 }
