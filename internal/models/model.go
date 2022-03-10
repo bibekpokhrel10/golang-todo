@@ -6,80 +6,88 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var db, _ = gorm.Open("sqlite3", "gorm.db")
-
-type TodoItemModel struct {
-	Id          int `grom:"primary_key"`
-	Description string
-	Completed   bool
+func ConnectDB() (*gorm.DB, error) {
+	db, err := gorm.Open("sqlite3", "gorm.db")
+	if err != nil {
+		return nil, err
+	}
+	db.Debug().DropTableIfExists(&TodoItemModel{})
+	db.Debug().AutoMigrate(&TodoItemModel{})
+	return db, nil
 }
 
-func CreateItemModel(d string) (TodoItemModel, error) {
+func NewUserRepo(db *gorm.DB) *databases {
+	return &databases{
+		db: db,
+	}
+}
+
+type databases struct {
+	db *gorm.DB
+}
+
+type TodoItemModels interface {
+	CreateItemModel(d string) (TodoItemModel, error)
+	GetTodoItems(completed bool) ([]TodoItemModel, error)
+	GetItemByID(Id int) (TodoItemModel, error)
+	UpdateItemModel(completed bool, id int) error
+	DeleteItemByID(Id int) error
+}
+
+func InitializeTodoItemModels(db *gorm.DB) TodoItemModels {
+	return &databases{db}
+}
+
+func (data *databases) CreateItemModel(d string) (TodoItemModel, error) {
 	todo := TodoItemModel{Description: d, Completed: false}
-	err := db.Model(&todo).Create(&todo).Error
+	err := data.db.Model(&todo).Create(&todo).Error
 	if err != nil {
-		log.Error("Failed to create todolist", err)
+		log.Error(err)
 		return todo, err
 	}
-	log.Info("Created Todoitem")
+	log.Info("Created TodoItem")
 	return todo, nil
 }
 
-func GetTodoItems(completed bool) ([]TodoItemModel, error) {
+func (data *databases) GetTodoItems(completed bool) ([]TodoItemModel, error) {
 	var todo []TodoItemModel
-	err := db.Model(&todo).Where("Completed = ?", completed).Find(&todo).Error
+	err := data.db.Model(&todo).Where("completed = ?", completed).Find(&todo).Error
 	if err != nil {
+		log.Error(err)
 		return todo, err
 	}
 	return todo, nil
 }
 
-func GetItemByID(Id int) (TodoItemModel, error) {
+func (data *databases) GetItemByID(Id int) (TodoItemModel, error) {
 	todo := TodoItemModel{}
-	err := db.Model(&todo).First(&todo, Id).Take(&todo).Error
+	err := data.db.Model(&todo).Where("id = ?", Id).Take(&todo).Error
 	if err != nil {
+		log.Error(err)
 		return todo, err
 	}
 	return todo, nil
 }
 
-func UpdateItemModel(completed bool, id int) error {
-	todo, err := GetItemByID(id)
+func (data *databases) UpdateItemModel(completed bool, Id int) error {
+	todo, _ := data.GetItemByID(Id)
+	todo.Completed = completed
+	err := data.db.Model(&todo).Where("id = ?", Id).Save(&todo).Error
 	if err != nil {
 		log.Error(err)
 		return err
 	}
-	err = db.Model(&todo).First(&todo, id).Error
-	if err != nil {
-		return err
-	}
-	todo.Completed = completed
-	err = db.Model(&todo).Save(&todo).Error
-	if err != nil {
-		log.Error("Failed to save the todoitem", err)
-		return err
-	}
-	log.Info("updated Todoitem")
+	log.Info("Updated Todoitem")
 	return nil
 }
 
-func DeleteItemByID(Id int) error {
-	todo, err := GetItemByID(Id)
+func (data *databases) DeleteItemByID(Id int) error {
+	todo := TodoItemModel{}
+	err := data.db.Model(&todo).Where("id=?", Id).Delete(&todo).Error
 	if err != nil {
 		log.Error(err)
-		return err
-	}
-	err = db.Model(&todo).Where("id=?", Id).Delete(&todo).Error
-	if err != nil {
-		log.Error("Todoitem not found in database", err)
 		return err
 	}
 	log.Info("Deleted todoitem")
 	return nil
-}
-
-func DropTable() {
-	db.Debug().DropTableIfExists(&TodoItemModel{})
-	db.Debug().AutoMigrate(&TodoItemModel{})
-
 }

@@ -9,6 +9,7 @@ function getCompletedTodos(){
 	        async: false,
 		success: function(data){
 			result = data;
+      console.log(data);
 		}
 	});
 	return result;
@@ -57,7 +58,6 @@ function addItem (value) {
   console.log(id);
   addItemToDOM(value, id);
   document.getElementById('item').value='';
-
   data.todo.push(value);
 }
 
@@ -75,7 +75,7 @@ function addItemToBackend (value) {
 			console.log(data);
                 }
         });
-        return result.Id;
+        return result.ID;
 }
 
 function renderTodoList() {
@@ -83,13 +83,13 @@ function renderTodoList() {
 
   for (var i = 0; i < data.todo.length; i++) {
     var value = data.todo[i].Description;
-    var id = data.todo[i].Id;
+    var id = data.todo[i].ID;
     addItemToDOM(value, id);
   }
 
   for (var j = 0; j < data.completed.length; j++) {
     var value = data.completed[j].Description;
-    var id = data.completed[j].Id;
+    var id = data.completed[j].ID;
     addItemToDOM(value, id, true);
   }
 }
@@ -97,7 +97,8 @@ function renderTodoList() {
 function removeItem() {
   var item = this.parentNode.parentNode;
   var parent = item.parentNode;
-  var id = parent.id; 
+  var id = parent.ID; 
+  console.log(item.ID);
   var value = item.innerText;
   
   if (id == 'todo') {
@@ -110,9 +111,9 @@ function removeItem() {
 }
 
 function removeItemInBackend (item) {
-	console.log(item.id)
+	console.log(item.ID)
 	$.ajax({
-                url: todolist_server + "/" + item.id,
+                url: todolist_server + "/" + item.ID,
 		type: 'DELETE',
 		async: false,
 		success: function(data) {
@@ -146,10 +147,10 @@ function completeItem() {
 }
 
 function updateItemInBackend (item, completed) {
-        console.log(item.id)
+        console.log(item.Id);
 	payload = {'completed': completed};
         $.ajax({
-                url: todolist_server + "/" + item.id,
+                url: todolist_server + "/" + item.ID,
                 type: 'PUT',
 		data: payload,
                 async: false,
@@ -166,7 +167,7 @@ function addItemToDOM(text, id, completed) {
 
   var item = document.createElement('li');
   item.innerText = text;
-  item.id = id;
+  item.ID = id;
 
   var buttons = document.createElement('div');
   buttons.classList.add('buttons');
