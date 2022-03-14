@@ -72,7 +72,7 @@ function addItemToBackend (value) {
 		async: false,
                 success: function(data){
                         result = data;
-			console.log(data);
+
                 }
         });
         return result.ID;

@@ -2,8 +2,8 @@
 
 This is a To-Do list application.
 
-- Server: Golang
-- Client: html, css , javascript
+- Server-side language: Golang
+- Client-side language: html, css , javascript
 - Database: Sqlite
 
 ## Application Requirement
@@ -40,11 +40,11 @@ This is a To-Do list application.
 
 ## Walk through the application
 
-Open the index.html file in any browser
+ Open the application at http://localhost:8000 which will redirect to http://localhost:8000/resources/
 
 ### Index page 
 
-![Index page](/Todolist_images/homepage.png)
+![Index page](/Todolist_images/Home.png)
 
 ### Create a todo list
 
@@ -56,16 +56,18 @@ Enter a todo list and click on add icon or enter.
 
 Click on the tick icon for the todo item to be marked as completed.
 
-![Completed a Todo item](/Todolist_images/completedlist.png)
+![Completed a Todo item](/Todolist_images/completed.png)
 
-### Deleting the Todo Item
-
-Click on the delete icon for the item to be deleted
-
-![Deleting a Todo item](/Todolist_images/Deleted.png)
-
-### To undo a Todo Item
+### To undo a Completed Item
 
 Click on the green tick icon again for the task to be marked Incomplete.
 
-![Incomplete a Todo item](/Todolist_images/Incomplete.png)
+![Incomplete a Todo item](/Todolist_images/Undocomplete.png)
+
+### Deleting the Todo Item
+
+Click on the delete icon for the item to be deleted.
+
+![Deleting a Todo item](/Todolist_images/Delete.png)
+
+

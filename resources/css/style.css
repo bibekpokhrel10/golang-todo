@@ -33,12 +33,12 @@ header input {
   width: 100%;
   height: 50px;
   float: left;
-  color: #fff;
-  font-size: 15px;
+  color: rgb(255, 255, 255);
+  font-size: 18px;
   font-weight: 400;
   text-indent: 18px;
   padding: 0 60px 0 0;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(12, 71, 54, 0.2);
   border-radius: 5px 25px 25px 5px;
   border: 0px;
   box-shadow: none;
@@ -114,7 +114,7 @@ ul.todo li {
   width: 100%;
   min-height: 50px;
   float: left;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 500;
   color: #444;
   line-height: 22px;
@@ -217,39 +217,51 @@ ul.todo li .buttons button.remove:hover svg .fill {
 ul.todo li .buttons button.complete svg .fill {
   fill: #25b99a;
 }
-
+ul.todo#todo::before{
+  content: 'Todo Items';
+  width: 100%;
+  display: block;
+  text-align: center;
+  font-size: 24px;
+  color:  rgb(122, 117, 117);
+  margin-bottom: 20px;
+}
 ul.todo#completed {
   position: relative;
   padding: 60px 0 0 0;
 }
 
 ul.todo#completed:before {
-  content: '';
-  width: 150px;
-  height: 1px;
-  background: #d8e5e0;
-
-  position: absolute;
-  top: 30px;
-  left: 50%;
-
-  margin: 0 0 0 -75px;
+  content: 'Completed Items';
+  width: 100%;
+  display: block;
+  text-align: center;
+  font-size: 24px;
+  color: rgb(122, 117, 117);
+  margin-top: -18px;
+  margin-bottom:20px;
 }
 
 ul.todo#todo:empty:after {
+  font-size:14px;
   content: 'You have nothing to-do!';
   margin: 15px 0 0 0;
 }
 
 ul.todo#completed:empty:after {
+  font-size:14px;
   content: 'You have yet to complete any tasks.';
 }
 
 ul.todo#todo:after,
-ul.todo#completed:after {
+ul.todo#completed:after{
   width: 100%;
   display: block;
   text-align: center;
-  font-size: 12px;
+  font-size: 24px;
   color: #aaa;
+}
+ul.todo#line hr{
+  margin-top: 40px;
+  border-top: 5px solid rgb(255, 255, 255);
 }

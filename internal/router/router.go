@@ -12,6 +12,7 @@ import (
 func CORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
+		w.Header().Set("Access-Control-Allow-Headers", "*")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "*")
 
@@ -21,6 +22,10 @@ func CORS(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+func redirect(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "http://localhost:8000/resources/", http.StatusMovedPermanently)
 }
 
 func RouterHandle() *mux.Router {
@@ -33,7 +38,9 @@ func RouterHandle() *mux.Router {
 	h := controllers.NewBaseHandler(userRepo)
 	router := mux.NewRouter()
 	router.Use(CORS)
-	router.HandleFunc("/healthz", controllers.Healthz).Methods("GET")
+	router.PathPrefix("/resources/").Handler(http.StripPrefix("/resources/", http.FileServer(http.Dir("./resources")))).Methods("GET")
+	router.HandleFunc("/", redirect)
+	router.HandleFunc("/todo/healthz", controllers.Healthz).Methods("GET")
 	router.HandleFunc("/todo-completed", h.GetCompletedItems).Methods("GET")
 	router.HandleFunc("/todo-incomplete", h.GetIncompleteItems).Methods("GET")
 	router.HandleFunc("/todo", h.CreateItem).Methods("POST")
